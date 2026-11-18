@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Music Moves</title>
-  <meta name="description" content="We've always moved to the music. What if the music moved to us? Dance in front of your camera and your movement plays the music.">
+  <meta name="description" content="Objects float in the air around you. Grab, stretch, throw, catch and smash them, and every move makes music.">
   <meta property="og:title" content="Music Moves">
   <meta property="og:description" content="We've always moved to the music. What if the music moved to us?">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -17,43 +17,43 @@
     <video id="video" playsinline muted></video>
     <canvas id="fx"></canvas>
   </div>
-  <canvas id="wave" aria-hidden="true"></canvas>
 
   <div id="hud" hidden>
-    <p class="now"><span class="dot"></span><span id="vibe-name">Amapiano</span></p>
-    <button id="menu-btn" class="round" aria-label="Settings">⋯</button>
+    <p class="pill"><span class="dot"></span><span id="place-name">Your room</span></p>
+    <div class="right">
+      <button id="style-btn" class="pill btn-pill" title="Change the art style">Pixel</button>
+      <button id="menu-btn" class="round" aria-label="Settings">⋯</button>
+    </div>
   </div>
 
   <aside id="sheet" hidden>
-    <p class="label">Sound</p>
-    <div class="vibes" data-role="vibe-picker"></div>
+    <p class="label">Place</p>
+    <div class="choices" id="place-choices"></div>
+    <p class="label">Art style</p>
+    <div class="choices" id="style-choices"></div>
+    <p class="label">How many objects</p>
+    <div class="choices" id="count-choices"></div>
     <label class="label" for="volume">Volume</label>
-    <input id="volume" type="range" min="-30" max="0" value="-8">
+    <input id="volume" type="range" min="-30" max="0" value="-6">
     <label class="label" for="camera-select">Camera</label>
     <select id="camera-select"></select>
-    <label class="check"><input id="glow-toggle" type="checkbox" checked> Glow on hands and feet</label>
-    <div class="row">
-      <label class="btn small ghost" for="file-input">Use a video</label>
-      <button id="save-btn" class="btn small ghost" title="Download the last 2 minutes of movement numbers (no video)">Save readings</button>
-      <button id="stop-btn" class="btn small ghost">Stop</button>
-    </div>
+    <p class="help">Close your hand or pinch to grab. Open it to let go. Flick to throw. Grab one object with both hands to stretch or squeeze it. Swipe an open hand to bat. Throw hard at an edge to smash.</p>
+    <div class="row"><button id="stop-btn" class="btn small ghost">Stop</button></div>
   </aside>
 
   <div id="intro" class="intro">
     <h1>Music <span>Moves</span></h1>
     <p class="tagline">We've always moved to the music. What if the music moved to us?</p>
-    <p class="label">Pick a sound</p>
-    <div class="vibes big" data-role="vibe-picker"></div>
-    <div class="row center">
-      <button id="start-btn" class="btn">Start with camera</button>
-      <label class="btn ghost" for="file-input">Use a video instead</label>
-    </div>
-    <p class="small">Turn your sound on. The more you move, the more the music fills in. Hands play notes, sharp hits add accents, stretching swells, going low gets deep, and freezing fades it all down.</p>
-    <p class="small">Stand back so the camera sees head to feet. On a phone, pick the back Ultra Wide (0.5x) camera from ⋯ once it starts. Your video stays on this device.</p>
+    <ul class="how">
+      <li><b>Objects float in the air around you,</b> picked to match where you are</li>
+      <li><b>Grab, stretch, throw, catch, bat, smash.</b> Every move makes a sound</li>
+      <li><b>Keep playing</b> and a beat grows underneath. Stop, and it goes quiet</li>
+    </ul>
+    <button id="start-btn" class="btn">Start</button>
+    <p class="small">Sound on. Sit or stand about an arm and a half from the screen so it sees both hands. Your camera stays on this device; nothing is recorded or uploaded.</p>
     <p id="status" class="status" hidden></p>
   </div>
 
-  <input id="file-input" type="file" accept="video/*" hidden>
   <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -2,52 +2,42 @@
 
 **We've always moved to the music. What if the music moved to us?**
 
-A free web app that turns your movement into music. Pick a sound world, dance in front of your camera, and the way you move plays it.
+Objects float in the air around you on camera. Grab them, stretch them, throw them, catch them, smash them, and every move makes a sound. Keep playing and a beat grows underneath. Stop, and it goes quiet.
 
 **Try it:** https://suhibug.github.io/music-moves/
 
 ## How it works
 
-1. **Pick a sound world:** Amapiano, House, Afro-Brazil, Hip hop or Calm. Each has its own tempo, chords, drums and instruments, all generated live with [Tone.js](https://tonejs.github.io/). No recordings, so nothing is copyrighted and nothing costs money.
-2. **The camera finds your body.** [MediaPipe Pose](https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker) finds points on your body about 30 times a second, right in the browser.
-3. **Your movement plays the music:**
+1. **Your hands are tracked** right in the browser with Google's free [MediaPipe Hand Landmarker](https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker): 21 points per hand, so it can tell an open hand from a grab or a pinch.
+2. **The objects match where you are.** The camera picture is checked every 20 seconds: a room gets room things (cups, books, pillows, socks...), and real objects it spots, like a cup or a plant, come up more often. A beach gets shells, rocks and cans; outdoors gets leaves and flowers. Their colors lean toward the colors behind you.
+3. **Pick an art style anytime:** Pixel, ASCII, Watercolor or 3D. All four are drawn from the same small pixel drawings.
+4. **Every action is a sound**, generated live with [Tone.js](https://tonejs.github.io/) (no recordings, nothing copyrighted). Each object's material has its own voice: glass, metal, soft, bouncy, wood, stone.
 
-| You | The music |
+| You do | It sounds like |
 |---|---|
-| Move more | Layers come in: a soft bed, then percussion and bass, then full drums, then the top layer |
-| A sharp hit (a burst, then a stop) | An accent: a log drum, a chord stab, a surdo, a snare and 808 |
-| Fast hand moves | Melody notes. Higher hand, higher note, always in key |
-| Steps and stomps | Light percussion |
-| Stretch wide | A long, warm swell |
-| Go low | The sound gets darker, with a deep drop |
-| Jump | A crash and a boom |
-| Both arms up | A rising whoosh |
-| Freeze | The music fades to a hum until you move again |
+| Grab (close your hand or pinch) | A note in the object's material. Higher on screen, higher note |
+| Wave it around | Notes on the beat as it moves |
+| Throw (let go mid-flick) | A whoosh |
+| Catch it | A bright accent |
+| Swipe an open hand through it | A hit |
+| It bounces | A knock: low on the floor, high on the ceiling |
+| Both hands on one object | A held chord that opens as you pull it wider and closes as you squeeze |
+| Squeeze it tiny, or throw it hard at an edge | It shatters into pieces with a crunch and falling notes |
 
-Everything lands on the beat grid, and layers only change on the first beat of a bar, so it always stays in time.
+Every sound lands on a beat grid, so it always stays musical.
 
-## How it was tuned
+## Why it changed
 
-The first version used guessed thresholds and felt jumpy. I tuned it on 22 short clips of dancers in hip hop, house, amapiano and Afro-Brazilian styles (kept private, never committed), measuring body speed, hand speed, foot speed, stretch and height for each:
-
-- **Energy alone can't tell genres apart.** Every dancer moved fast, so the old version called almost everything "Rave". Now you pick the sound world, and movement shapes it.
-- **Fixed thresholds swing too much between dancers and cameras.** One dancer set off four times as many hand notes as another. Hand notes and hits are now measured against *your own* usual speed over the last few seconds.
-- **Jumps were over-counted** when dancers moved toward the camera (their feet move up on screen). Jumps are now detected by upward speed of both feet and the hips together.
-
-## Seeing your whole body
-
-On a phone, start, tap ⋯ and pick the back **Ultra Wide** camera (the 0.5x lens). Prop the phone at about knee height, tilted up a little, a few steps away. On Android, the app zooms out as far as the camera allows. You can also tap **Use a video** to play music from a saved clip.
+The first versions read the whole body and played music in a style you picked. Testing showed two problems: the music played by itself, and picking a genre missed the point. This version starts silent, and every sound comes from you. The idea comes from a freestyle drill: imagine holding a piece of paper in the air, let it go, catch it with the other hand, throw it, and play with it.
 
 ## Privacy
 
-Your video never leaves your device. Nothing is recorded or uploaded. The only thing counted is anonymous usage (music started, which sound world, how many layers were reached) through Google Analytics.
+Your camera never leaves your device. Nothing is recorded or uploaded. Only anonymous usage is counted with Google Analytics (started, art style, place type, first catch or smash). Never video, hands or places.
 
-## Roadmap
+## Next
 
-- [x] Step 1: camera, body tracking, energy meter
-- [x] Step 2: generated music in five sound worlds, played by your movement
-- [x] Step 3: tuned on real dance clips (**Save readings** downloads the numbers, never the video)
-- [ ] Step 4: share a clip, plus usage data in my [personal analytics dashboard](https://github.com/suhibug/personal-analytics)
+- [ ] Kick objects with your feet (full body, when you're further from the screen)
+- [ ] "Teach it your styles": record yourself dancing chill, hip hop, house and afro, and the beat underneath follows the style you're dancing
 
 ## Run it yourself
 

@@ -4,66 +4,58 @@
   --line: rgba(255, 255, 255, .14);
   --ink: #f4f2fb;
   --muted: #b2adc9;
-  --glow: #ffb547;
+  --glow: #ffcf5c;
 }
-
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; overflow: hidden; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, sans-serif; }
 [hidden] { display: none !important; }
 
-/* Camera fills the screen. "contain" keeps the whole picture, so feet aren't cut off. */
+/* Camera fills the screen; the objects are drawn on a canvas exactly on top of it. */
 #stage { position: fixed; inset: 0; background: #000; }
 #stage video, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
-#stage.mirror video, #stage.mirror canvas { transform: scaleX(-1); }
-
-/* A slow wave along the bottom that breathes with your movement. */
-#wave { position: fixed; left: 0; right: 0; bottom: 0; width: 100%; height: 90px; pointer-events: none; }
+#stage.mirror video { transform: scaleX(-1); }
 
 #hud { position: fixed; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
 #hud > * { pointer-events: auto; }
-.now { margin: 0; display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: var(--surface); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-weight: 600; font-size: 14px; }
+.right { display: flex; gap: 8px; }
+.pill { margin: 0; display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: var(--surface); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font: 600 14px system-ui, sans-serif; color: var(--ink); border: 0; }
+.btn-pill { cursor: pointer; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--glow); box-shadow: 0 0 10px var(--glow); }
 .round { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); font-size: 20px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
 
 #sheet {
-  position: fixed; top: 60px; right: 12px; width: 270px; max-height: calc(100% - 80px); overflow-y: auto;
+  position: fixed; top: 60px; right: 12px; width: 290px; max-height: calc(100% - 80px); overflow-y: auto;
   padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 6px;
 }
 .label { margin: 8px 0 2px; color: var(--muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; }
-.check { display: flex; gap: 8px; align-items: center; margin-top: 8px; color: var(--muted); font-size: 14px; }
+.choices { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); }
+.choice[aria-pressed="true"] { border-color: var(--glow); color: var(--glow); }
+.help { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
 input[type=range] { width: 100%; accent-color: var(--glow); }
-input[type=checkbox] { accent-color: var(--glow); }
 select { width: 100%; font: inherit; padding: 6px; border-radius: 8px; background: #191726; color: var(--ink); border: 1px solid var(--line); }
-.row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.row.center { justify-content: center; }
+.row { display: flex; gap: 6px; margin-top: 8px; }
 
-.vibes { display: flex; flex-wrap: wrap; gap: 6px; }
-.vibe { font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); }
-.vibe[aria-pressed="true"] { border-color: var(--c); color: var(--c); box-shadow: 0 0 12px color-mix(in srgb, var(--c) 40%, transparent); }
-.vibes.big { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; width: min(100%, 820px); }
-.vibes.big .vibe { padding: 14px; border-radius: 14px; text-align: left; font-size: 16px; color: var(--ink); background: rgba(255, 255, 255, .03); }
-.vibes.big .vibe small { display: block; margin-top: 4px; font-weight: 400; font-size: 13px; color: var(--muted); }
-
-.btn { font: inherit; font-weight: 700; cursor: pointer; border: 0; border-radius: 999px; padding: 12px 24px; background: var(--glow); color: var(--bg); display: inline-block; }
+.btn { font: inherit; font-weight: 700; cursor: pointer; border: 0; border-radius: 999px; padding: 13px 34px; background: var(--glow); color: var(--bg); }
 .btn.ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--line); }
 .btn.small { padding: 6px 12px; font-size: 13px; }
 .btn:disabled { opacity: .5; cursor: wait; }
 
 .intro {
   position: fixed; inset: 0; overflow-y: auto; padding: 32px 16px;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center;
-  background: radial-gradient(ellipse at top, color-mix(in srgb, var(--glow) 16%, #15121f) 0%, var(--bg) 65%);
-  transition: background .6s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center;
+  background: radial-gradient(ellipse at top, #2a2140 0%, var(--bg) 65%);
 }
 .intro h1 { margin: 0; font-size: clamp(40px, 9vw, 72px); letter-spacing: -.02em; }
 .intro h1 span { color: var(--glow); text-shadow: 0 0 28px var(--glow); }
-.tagline { margin: 0 0 8px; color: var(--muted); font-size: 19px; max-width: 34ch; }
-.small { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 52ch; }
+.tagline { margin: 0; color: var(--muted); font-size: 19px; max-width: 34ch; }
+.how { list-style: none; padding: 0; margin: 4px 0 8px; display: grid; gap: 6px; color: var(--muted); }
+.how b { color: var(--ink); }
+.small { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 50ch; }
 .status { margin: 0; padding: 8px 14px; border-radius: 999px; background: #191726; font-size: 14px; }
 
 @media (max-width: 640px) {
   #sheet { top: auto; bottom: 12px; left: 12px; right: 12px; width: auto; max-height: 70%; }
-  .intro { justify-content: flex-start; }
 }
