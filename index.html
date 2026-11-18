@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Moves</title>
+  <meta name="description" content="We've always moved to the music. What if the music moved to us? A free web app that reads your dance moves through the camera.">
+  <meta property="og:title" content="Music Moves">
+  <meta property="og:description" content="We've always moved to the music. What if the music moved to us?">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <script src="analytics.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Music <span>Moves</span></h1>
+    <p class="tagline">We've always moved to the music. What if the music moved to us?</p>
+  </header>
+
+  <main>
+    <section class="stage" aria-label="Camera">
+      <video id="video" playsinline muted></video>
+      <canvas id="skeleton"></canvas>
+      <div id="intro" class="overlay">
+        <p>Prop your phone or laptop a few steps away so the camera sees your whole body, head to feet.</p>
+        <button id="start-btn" class="btn">Start camera</button>
+        <p class="small">Your video stays on this device. Nothing is recorded or uploaded.</p>
+      </div>
+      <p id="status" class="status" hidden></p>
+    </section>
+
+    <section class="panel" aria-label="Your movement">
+      <div class="mode-box">
+        <p class="label">Mood</p>
+        <p id="mode" class="mode" data-mode="none">Waiting</p>
+      </div>
+
+      <div>
+        <p class="label">Energy <b id="energy-num">0%</b></p>
+        <div class="meter"><div id="energy-bar"></div></div>
+        <canvas id="history" height="70" aria-label="Energy over the last 10 seconds"></canvas>
+      </div>
+
+      <div class="readings">
+        <div><p class="label">Bounce</p><p id="bpm" class="value">–</p></div>
+        <div><p class="label">Jump</p><p id="jump" class="value">–</p></div>
+        <div><p class="label">Arms up</p><p id="arms" class="value">–</p></div>
+      </div>
+
+      <button id="stop-btn" class="btn ghost" hidden>Stop camera</button>
+      <p class="small">Step 1 of 4: reading your movement. Next up, the music follows it.</p>
+    </section>
+  </main>
+
+  <footer>Free and open source. Body tracking by <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker">MediaPipe</a>, running on your device.</footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

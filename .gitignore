@@ -1,0 +1,6 @@
+.DS_Store
+# Tuning videos are personal. Never commit them; only share the numbers measured from them.
+tuning-videos/
+*.mp4
+*.mov
+*.webm
