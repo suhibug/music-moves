@@ -2,58 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Music Moves</title>
-  <meta name="description" content="We've always moved to the music. What if the music moved to us? A free web app that reads your dance moves through the camera.">
+  <meta name="description" content="We've always moved to the music. What if the music moved to us? Dance in front of your camera and the music follows you.">
   <meta property="og:title" content="Music Moves">
   <meta property="og:description" content="We've always moved to the music. What if the music moved to us?">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
   <script src="analytics.js" defer></script>
 </head>
 <body>
-  <header>
+  <div id="stage">
+    <video id="video" playsinline muted></video>
+    <canvas id="skeleton"></canvas>
+  </div>
+
+  <aside id="panel" hidden>
+    <button id="collapse-btn" class="icon-btn" aria-label="Show or hide settings">⌄</button>
+    <p class="now"><span id="style" class="style">Flow</span> <span id="tempo" class="tempo">72 BPM</span></p>
+
+    <div class="meter"><div id="energy-bar"></div></div>
+    <div class="chips">
+        <span class="chip" id="chip-hands" title="Fast hand moves play notes. Higher hand, higher note.">Hands</span>
+        <span class="chip" id="chip-steps" title="Steps and stomps add a drum hit.">Steps</span>
+        <span class="chip" id="chip-bounce" title="A steady bounce sets the beat.">Bounce</span>
+        <span class="chip" id="chip-jump" title="A jump drops a crash and a boom.">Jump</span>
+        <span class="chip" id="chip-arms" title="Both arms up builds a rising whoosh.">Arms up</span>
+        <span class="chip" id="chip-freeze" title="Stand still and the music fades down.">Freeze</span>
+    </div>
+
+    <div class="extra">
+      <label class="label" for="volume">Volume</label>
+      <input id="volume" type="range" min="-30" max="0" value="-8">
+
+      <label class="label" for="camera-select">Camera</label>
+      <select id="camera-select"></select>
+
+      <div class="row">
+        <label class="btn small ghost" for="file-input">Use a video</label>
+        <button id="save-btn" class="btn small ghost" title="Download the last 2 minutes of readings as a spreadsheet">Save readings</button>
+        <button id="stop-btn" class="btn small ghost">Stop</button>
+      </div>
+    </div>
+  </aside>
+
+  <div id="intro" class="intro">
     <h1>Music <span>Moves</span></h1>
     <p class="tagline">We've always moved to the music. What if the music moved to us?</p>
-  </header>
+    <ul class="how">
+      <li><b>Move slow and easy</b> for calm Flow music</li>
+      <li><b>Bounce</b> for Hip hop, <b>bounce faster</b> for House</li>
+      <li><b>Jump and go big</b> for Rave</li>
+      <li><b>Hands</b> play notes, <b>arms up</b> builds, <b>freeze</b> fades it down</li>
+    </ul>
+    <div class="row center">
+      <button id="start-btn" class="btn">Start with camera</button>
+      <label class="btn ghost" for="file-input">Use a video instead</label>
+    </div>
+    <p class="small">Turn your sound on. Stand back so the camera sees head to feet: on a phone, pick the back <b>Ultra Wide</b> (0.5x) camera from the side panel once it starts.</p>
+    <p class="small">Your video stays on this device. Nothing is recorded or uploaded.</p>
+    <p id="status" class="status" hidden></p>
+  </div>
 
-  <main>
-    <section class="stage" aria-label="Camera">
-      <video id="video" playsinline muted></video>
-      <canvas id="skeleton"></canvas>
-      <div id="intro" class="overlay">
-        <p>Prop your phone or laptop a few steps away so the camera sees your whole body, head to feet.</p>
-        <button id="start-btn" class="btn">Start camera</button>
-        <p class="small">Your video stays on this device. Nothing is recorded or uploaded.</p>
-      </div>
-      <p id="status" class="status" hidden></p>
-    </section>
-
-    <section class="panel" aria-label="Your movement">
-      <div class="mode-box">
-        <p class="label">Mood</p>
-        <p id="mode" class="mode" data-mode="none">Waiting</p>
-      </div>
-
-      <div>
-        <p class="label">Energy <b id="energy-num">0%</b></p>
-        <div class="meter"><div id="energy-bar"></div></div>
-        <canvas id="history" height="70" aria-label="Energy over the last 10 seconds"></canvas>
-      </div>
-
-      <div class="readings">
-        <div><p class="label">Bounce</p><p id="bpm" class="value">–</p></div>
-        <div><p class="label">Jump</p><p id="jump" class="value">–</p></div>
-        <div><p class="label">Arms up</p><p id="arms" class="value">–</p></div>
-      </div>
-
-      <button id="stop-btn" class="btn ghost" hidden>Stop camera</button>
-      <p class="small">Step 1 of 4: reading your movement. Next up, the music follows it.</p>
-    </section>
-  </main>
-
-  <footer>Free and open source. Body tracking by <a href="https://ai.google.dev/edge/mediapipe/solutions/vision/pose_landmarker">MediaPipe</a>, running on your device.</footer>
-
+  <input id="file-input" type="file" accept="video/*" hidden>
   <script type="module" src="app.js"></script>
 </body>
 </html>
