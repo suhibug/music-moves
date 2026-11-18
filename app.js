@@ -1,43 +1,74 @@
 // Music Moves: camera or video in, body tracking, live music out.
-import { PoseLandmarker, FilesetResolver, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
-import { createTracker, update, away, foldTempo } from "./motion.js";
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+import { createTracker, update, away } from "./motion.js";
 import * as music from "./music.js";
 
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 const $ = (id) => document.getElementById(id);
-const video = $("video"), canvas = $("skeleton"), ctx = canvas.getContext("2d");
+const video = $("video"), fx = $("fx"), fxc = fx.getContext("2d"), wave = $("wave"), wc = wave.getContext("2d");
 
 let landmarker, stream, tracker, running = false, lastVideoTime = -1;
-const log = [];               // readings from the last 2 minutes, for "Save readings"
-const flashUntil = {};        // keeps quick moves (a jump, a step) lit long enough to see
-const reached = new Set();    // styles reached this session, counted once each
+let vibe = saved("vibe") || "amapiano";
+let glow = saved("glow") !== "off";
+let calmEnergy = 0, phase = 0;      // the bottom wave eases slowly so it feels calm, not like a heartbeat
+const trails = [[], [], [], []];    // recent positions of hands and feet, for the soft glow
+const log = [];                     // movement numbers from the last 2 minutes, for "Save readings"
+const reached = new Set();
+
+// ---------- Saved choices (this browser only) ----------
+function saved(key) { try { return localStorage.getItem(key); } catch { return null; } }
+function save(key, value) { try { localStorage.setItem(key, value); } catch {} }
 
 // ---------- Usage counts ----------
-// Only actions and styles are counted (Google Analytics). Never video or body points.
+// Only actions and sound choices are counted (Google Analytics). Never video or body points.
 function track(name, params) {
   try { window.gtag?.("event", name, params); } catch {}
 }
 
+// ---------- Sound picker ----------
+const COLORS = { amapiano: "#ffb547", house: "#7cf8ff", afro: "#5cf2a6", hiphop: "#ff5a6e", calm: "#a9b8ff" };
+const glowColor = () => COLORS[music.current().key] || COLORS[vibe];
+
+function drawPickers() {
+  for (const box of document.querySelectorAll('[data-role="vibe-picker"]')) {
+    const big = box.classList.contains("big");
+    box.innerHTML = Object.entries(music.VIBES).map(([key, v]) =>
+      `<button class="vibe" data-vibe="${key}" aria-pressed="${key === vibe}" style="--c:${COLORS[key]}">${v.name}${big ? `<small>${v.about}</small>` : ""}</button>`
+    ).join("");
+  }
+  document.body.style.setProperty("--glow", COLORS[vibe]);
+  $("vibe-name").textContent = music.VIBES[vibe].name;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest(".vibe");
+  if (!b) return;
+  vibe = b.dataset.vibe;
+  save("vibe", vibe);
+  music.setVibe(vibe);
+  drawPickers();
+  if (running) track("vibe_change", { vibe });
+});
+drawPickers();
+
 // ---------- Start and stop ----------
-$("start-btn").addEventListener("click", () => begin(() => openCamera(savedCamera())));
+$("start-btn").addEventListener("click", () => begin(() => openCamera(saved("camera") || "")));
 $("file-input").addEventListener("change", (e) => {
   const file = e.target.files[0];
   e.target.value = "";
-  if (file) begin(() => openFile(file));
+  if (file) running ? openFile(file) : begin(() => openFile(file));
 });
-$("camera-select").addEventListener("change", async (e) => {
-  try { localStorage.setItem("camera", e.target.value); } catch {}
-  await openCamera(e.target.value);
-});
-$("stop-btn").addEventListener("click", stopAll);
+$("camera-select").addEventListener("change", (e) => { save("camera", e.target.value); openCamera(e.target.value); });
+$("menu-btn").addEventListener("click", () => ($("sheet").hidden = !$("sheet").hidden));
 $("volume").addEventListener("input", (e) => music.setVolume(+e.target.value));
-$("collapse-btn").addEventListener("click", () => $("panel").classList.toggle("collapsed"));
+$("glow-toggle").checked = glow;
+$("glow-toggle").addEventListener("change", (e) => { glow = e.target.checked; save("glow", glow ? "on" : "off"); });
 $("save-btn").addEventListener("click", saveReadings);
+$("stop-btn").addEventListener("click", stopAll);
 
 async function begin(openSource) {
   $("start-btn").disabled = true;
-  await music.start(); // sound has to start right from the tap
+  await music.start(vibe); // sound has to start right from the tap
   showStatus("Opening…");
   try {
     await openSource();
@@ -53,10 +84,9 @@ async function begin(openSource) {
   tracker = createTracker();
   running = true;
   $("intro").hidden = true;
-  $("panel").hidden = false;
-  // On phones, start with settings tucked away so the panel doesn't cover the dancer.
-  $("panel").classList.toggle("collapsed", matchMedia("(max-width: 640px)").matches);
+  $("hud").hidden = false;
   showStatus("");
+  track("music_start", { vibe });
   requestAnimationFrame(loop);
 }
 
@@ -67,15 +97,14 @@ function stopAll() {
   video.removeAttribute("src");
   video.load();
   music.stop();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  $("panel").hidden = true;
+  fxc.clearRect(0, 0, fx.width, fx.height);
+  $("hud").hidden = true;
+  $("sheet").hidden = true;
   $("intro").hidden = false;
   $("start-btn").disabled = false;
 }
 
 // ---------- Camera ----------
-const savedCamera = () => { try { return localStorage.getItem("camera") || ""; } catch { return ""; } };
-
 async function openCamera(deviceId) {
   closeCamera();
   video.removeAttribute("src");
@@ -90,29 +119,17 @@ async function openCamera(deviceId) {
     throw new Error("The camera didn't open. Allow camera access in your browser settings and try again.");
   }
   const cam = stream.getVideoTracks()[0];
-  widest(cam);
-  // Front cameras show a mirror image, so moving your right hand moves the right side of the screen.
+  const zoom = cam.getCapabilities?.().zoom; // on phones that allow it (mostly Android), zoom out all the way
+  if (zoom) cam.applyConstraints({ advanced: [{ zoom: zoom.min }] }).catch(() => {});
+  // Front cameras show a mirror image, so your right hand moves on the right side of the screen.
   const front = cam.getSettings().facingMode === "user" || /front|facetime/i.test(cam.label);
   $("stage").classList.toggle("mirror", front);
   video.srcObject = stream;
   await video.play();
-  await listCameras(cam.getSettings().deviceId);
-  track("camera_start", { camera: front ? "front" : "back" });
-}
-
-// On phones that allow it (mostly Android), zoom out as far as the camera goes.
-function widest(cam) {
-  const zoom = cam.getCapabilities?.().zoom;
-  if (zoom) cam.applyConstraints({ advanced: [{ zoom: zoom.min }] }).catch(() => {});
-}
-
-// Fills the camera list. iPhones list "Back Ultra Wide Camera" here: that's the 0.5x lens.
-async function listCameras(currentId) {
+  // iPhones list "Back Ultra Wide Camera" here: that's the 0.5x lens.
   const cams = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput");
-  $("camera-select").innerHTML = cams
-    .map((c, i) => `<option value="${c.deviceId}">${c.label || "Camera " + (i + 1)}</option>`)
-    .join("");
-  $("camera-select").value = currentId;
+  $("camera-select").innerHTML = cams.map((c, i) => `<option value="${c.deviceId}">${c.label || "Camera " + (i + 1)}</option>`).join("");
+  $("camera-select").value = cam.getSettings().deviceId;
   $("camera-select").disabled = false;
 }
 
@@ -123,7 +140,7 @@ function closeCamera() {
 }
 
 // ---------- A saved video instead of the camera ----------
-// Good for testing with dance clips. The clip's own sound is muted so you hear the generated music.
+// Good for dancing along to a clip. Its own sound is muted, so you hear the music your moves make.
 async function openFile(file) {
   closeCamera();
   $("stage").classList.remove("mirror");
@@ -151,66 +168,86 @@ function loop() {
     lastVideoTime = video.currentTime;
     const now = performance.now();
     const body = landmarker.detectForVideo(video, now).landmarks[0];
-    drawSkeleton(body);
-    const r = body ? update(tracker, body, now) : away(tracker, now);
-    r.bpmFolded = r.bpm ? foldTempo(r.bpm) : null;
+    const r = body ? update(tracker, body, now, video.videoWidth / video.videoHeight) : away(tracker);
     music.follow(r);
+    drawGlow(r);
     remember(r, now);
-    render(r, now);
+    const playing = music.current();
+    if (!reached.has(playing.layer)) { reached.add(playing.layer); track("layer_reached", { layer: playing.layer, vibe: playing.key }); }
   }
+  drawWave();
   requestAnimationFrame(loop);
 }
 
-function drawSkeleton(body) {
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if (!body) return;
-  const glow = getComputedStyle(document.body).getPropertyValue("--glow").trim() || "#8fa6ff";
-  const draw = new DrawingUtils(ctx);
-  draw.drawConnectors(body, PoseLandmarker.POSE_CONNECTIONS, { color: glow, lineWidth: 5 });
-  draw.drawLandmarks(body, { color: "#ffffff", fillColor: glow, radius: 4 });
+// Soft dots with short fading trails on hands and feet only, so your face and body stay clear.
+function drawGlow(r) {
+  fx.width = video.videoWidth;
+  fx.height = video.videoHeight;
+  fxc.clearRect(0, 0, fx.width, fx.height);
+  if (!glow) return;
+  const color = glowColor();
+  r.points.forEach((p, k) => {
+    const trail = trails[k];
+    trail.push({ x: p.x * fx.width, y: p.y * fx.height });
+    if (trail.length > 10) trail.shift();
+  });
+  for (let k = r.points.length; k < 4; k++) trails[k].length = 0;
+  const size = Math.max(fx.width, fx.height) / 140;
+  fxc.globalCompositeOperation = "lighter";
+  for (const trail of trails) {
+    trail.forEach((pt, j) => {
+      const a = (j + 1) / trail.length;
+      const g = fxc.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, size * (1 + a));
+      g.addColorStop(0, hexAlpha(color, 0.5 * a));
+      g.addColorStop(1, hexAlpha(color, 0));
+      fxc.fillStyle = g;
+      fxc.beginPath();
+      fxc.arc(pt.x, pt.y, size * (1 + a), 0, Math.PI * 2);
+      fxc.fill();
+    });
+  }
+  fxc.globalCompositeOperation = "source-over";
 }
 
-// ---------- Side bar ----------
-function render(r, now) {
-  const playing = music.currentStyle();
-  $("style").textContent = playing.name;
-  $("tempo").textContent = `${playing.bpm} BPM`;
-  document.body.dataset.style = playing.key;
-  $("energy-bar").style.width = Math.round(r.energy * 100) + "%";
-
-  if (r.hands.length) flashUntil.hands = now + 250;
-  if (r.steps) flashUntil.steps = now + 250;
-  if (r.jumped) flashUntil.jump = now + 500;
-  const on = {
-    hands: now < (flashUntil.hands || 0),
-    steps: now < (flashUntil.steps || 0),
-    bounce: !!r.bpm,
-    jump: now < (flashUntil.jump || 0),
-    arms: r.armsUp,
-    freeze: r.frozen,
-  };
-  for (const [k, v] of Object.entries(on)) $("chip-" + k).classList.toggle("on", v);
-
-  if (!reached.has(playing.key)) {
-    reached.add(playing.key);
-    track("style_reached", { style: playing.key });
+// A slow, smooth wave at the bottom. It swells gently with your movement instead of jumping.
+function drawWave() {
+  const dpr = devicePixelRatio || 1;
+  wave.width = wave.clientWidth * dpr;
+  wave.height = wave.clientHeight * dpr;
+  const e = tracker ? tracker.energy : 0;
+  calmEnergy += (e - calmEnergy) * 0.02;
+  phase += 0.008 + calmEnergy * 0.02;
+  const color = glowColor();
+  const mid = wave.height * 0.6, amp = (4 + calmEnergy * 26) * dpr;
+  for (const [k, alpha] of [[1, 0.55], [0.6, 0.2]]) {
+    wc.beginPath();
+    for (let x = 0; x <= wave.width; x += 6 * dpr) {
+      const u = x / wave.width;
+      const y = mid + amp * k * Math.sin(u * Math.PI * 2 * 1.5 + phase * (k === 1 ? 1 : -0.7)) * Math.sin(Math.PI * u);
+      x ? wc.lineTo(x, y) : wc.moveTo(x, y);
+    }
+    wc.strokeStyle = hexAlpha(color, alpha);
+    wc.lineWidth = 2 * dpr;
+    wc.stroke();
   }
 }
 
+function hexAlpha(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a.toFixed(3)})`;
+}
+
 // ---------- Save readings ----------
-// The numbers only (no video), so dance clips can be used to tune the thresholds in motion.js.
+// Numbers only (no video), so clips can be used to tune the thresholds in motion.js.
 function remember(r, now) {
-  log.push([Math.round(now), r.visible ? 1 : 0, r.energy.toFixed(3), r.bpm ?? "", r.hands.length, r.steps, r.jumped ? 1 : 0, r.armsUp ? 1 : 0, r.frozen ? 1 : 0, r.style]);
+  log.push([Math.round(now), r.visible ? 1 : 0, r.energy.toFixed(3), r.hands.length, r.hit ? 1 : 0, r.steps, r.jumped ? 1 : 0, r.extended ? 1 : 0, r.wentLow ? 1 : 0, r.level.toFixed(2), r.span.toFixed(2), r.frozen ? 1 : 0, music.current().layer, vibe]);
   while (log.length && now - log[0][0] > 120000) log.shift();
 }
 
 function saveReadings() {
-  const head = "time_ms,body_seen,energy,bounce_per_min,hand_moves,steps,jump,arms_up,frozen,style";
-  const csv = [head, ...log.map((row) => row.join(","))].join("\n");
+  const head = "time_ms,body_seen,energy,hand_moves,hit,steps,jump,stretch,went_low,level,span,frozen,layer,sound";
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  a.href = URL.createObjectURL(new Blob([[head, ...log.map((row) => row.join(","))].join("\n")], { type: "text/csv" }));
   a.download = `music-moves-readings-${new Date().toISOString().slice(0, 19).replace(/:/g, "-")}.csv`;
   a.click();
   track("save_readings");

@@ -4,3 +4,5 @@ tuning-videos/
 *.mp4
 *.mov
 *.webm
+# Body points and beat data measured from dance videos. Private: never commit.
+tuning-data/

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Music Moves</title>
-  <meta name="description" content="We've always moved to the music. What if the music moved to us? Dance in front of your camera and the music follows you.">
+  <meta name="description" content="We've always moved to the music. What if the music moved to us? Dance in front of your camera and your movement plays the music.">
   <meta property="og:title" content="Music Moves">
   <meta property="og:description" content="We've always moved to the music. What if the music moved to us?">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -15,53 +15,41 @@
 <body>
   <div id="stage">
     <video id="video" playsinline muted></video>
-    <canvas id="skeleton"></canvas>
+    <canvas id="fx"></canvas>
+  </div>
+  <canvas id="wave" aria-hidden="true"></canvas>
+
+  <div id="hud" hidden>
+    <p class="now"><span class="dot"></span><span id="vibe-name">Amapiano</span></p>
+    <button id="menu-btn" class="round" aria-label="Settings">⋯</button>
   </div>
 
-  <aside id="panel" hidden>
-    <button id="collapse-btn" class="icon-btn" aria-label="Show or hide settings">⌄</button>
-    <p class="now"><span id="style" class="style">Flow</span> <span id="tempo" class="tempo">72 BPM</span></p>
-
-    <div class="meter"><div id="energy-bar"></div></div>
-    <div class="chips">
-        <span class="chip" id="chip-hands" title="Fast hand moves play notes. Higher hand, higher note.">Hands</span>
-        <span class="chip" id="chip-steps" title="Steps and stomps add a drum hit.">Steps</span>
-        <span class="chip" id="chip-bounce" title="A steady bounce sets the beat.">Bounce</span>
-        <span class="chip" id="chip-jump" title="A jump drops a crash and a boom.">Jump</span>
-        <span class="chip" id="chip-arms" title="Both arms up builds a rising whoosh.">Arms up</span>
-        <span class="chip" id="chip-freeze" title="Stand still and the music fades down.">Freeze</span>
-    </div>
-
-    <div class="extra">
-      <label class="label" for="volume">Volume</label>
-      <input id="volume" type="range" min="-30" max="0" value="-8">
-
-      <label class="label" for="camera-select">Camera</label>
-      <select id="camera-select"></select>
-
-      <div class="row">
-        <label class="btn small ghost" for="file-input">Use a video</label>
-        <button id="save-btn" class="btn small ghost" title="Download the last 2 minutes of readings as a spreadsheet">Save readings</button>
-        <button id="stop-btn" class="btn small ghost">Stop</button>
-      </div>
+  <aside id="sheet" hidden>
+    <p class="label">Sound</p>
+    <div class="vibes" data-role="vibe-picker"></div>
+    <label class="label" for="volume">Volume</label>
+    <input id="volume" type="range" min="-30" max="0" value="-8">
+    <label class="label" for="camera-select">Camera</label>
+    <select id="camera-select"></select>
+    <label class="check"><input id="glow-toggle" type="checkbox" checked> Glow on hands and feet</label>
+    <div class="row">
+      <label class="btn small ghost" for="file-input">Use a video</label>
+      <button id="save-btn" class="btn small ghost" title="Download the last 2 minutes of movement numbers (no video)">Save readings</button>
+      <button id="stop-btn" class="btn small ghost">Stop</button>
     </div>
   </aside>
 
   <div id="intro" class="intro">
     <h1>Music <span>Moves</span></h1>
     <p class="tagline">We've always moved to the music. What if the music moved to us?</p>
-    <ul class="how">
-      <li><b>Move slow and easy</b> for calm Flow music</li>
-      <li><b>Bounce</b> for Hip hop, <b>bounce faster</b> for House</li>
-      <li><b>Jump and go big</b> for Rave</li>
-      <li><b>Hands</b> play notes, <b>arms up</b> builds, <b>freeze</b> fades it down</li>
-    </ul>
+    <p class="label">Pick a sound</p>
+    <div class="vibes big" data-role="vibe-picker"></div>
     <div class="row center">
       <button id="start-btn" class="btn">Start with camera</button>
       <label class="btn ghost" for="file-input">Use a video instead</label>
     </div>
-    <p class="small">Turn your sound on. Stand back so the camera sees head to feet: on a phone, pick the back <b>Ultra Wide</b> (0.5x) camera from the side panel once it starts.</p>
-    <p class="small">Your video stays on this device. Nothing is recorded or uploaded.</p>
+    <p class="small">Turn your sound on. The more you move, the more the music fills in. Hands play notes, sharp hits add accents, stretching swells, going low gets deep, and freezing fades it all down.</p>
+    <p class="small">Stand back so the camera sees head to feet. On a phone, pick the back Ultra Wide (0.5x) camera from ⋯ once it starts. Your video stays on this device.</p>
     <p id="status" class="status" hidden></p>
   </div>
 
